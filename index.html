@@ -1,68 +1,231 @@
 <!DOCTYPE html>
-<html lang="ka">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moon Nina Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-[#121212] text-white p-6">
-    <nav class="flex justify-between pb-4 border-b border-gray-800 mb-6">
-        <h1 class="font-bold">MOON STUDIO</h1>
-        <button id="adminBtn" onclick="handleAdminClick()" class="bg-gray-700 px-4 py-2 rounded">პანელი</button>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
+
+    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-lg">
+        <h1 class="text-2xl font-bold text-indigo-400 tracking-wide">Moon Nina Studio</h1>
+        <button id="admin-btn" class="text-sm bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded transition shadow">
+            Admin Access
+        </button>
     </nav>
 
-    <section id="adminPanel" class="hidden bg-[#181818] p-6 rounded border border-gray-800 mb-8">
-        <input type="text" id="videoTitle" placeholder="სათაური" class="w-full bg-[#121212] p-2 mb-2 rounded border border-gray-700">
-        <input type="file" id="videoFile" class="w-full mb-2">
-        <button onclick="addVideo()" class="bg-blue-600 px-4 py-2 rounded w-full">ატვირთვა</button>
-    </section>
+    <main class="container mx-auto px-4 py-8">
+        
+        <section id="admin-panel" class="hidden mb-12 bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700">
+            <h2 class="text-xl font-semibold mb-4 text-indigo-300">Admin Dashboard - Upload Video</h2>
+            <form id="upload-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1" for="video-title">Video Title</label>
+                    <input type="text" id="video-title" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500" placeholder="Enter video title...">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1" for="video-file">Video File (MP4, WebM)</label>
+                    <input type="file" id="video-file" accept="video/*" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500">
+                </div>
+                <button type="submit" id="upload-submit-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-6 rounded transition w-full md:w-auto">
+                    Upload Video
+                </button>
+                <p id="upload-status" class="text-sm mt-2 hidden"></p>
+            </form>
+        </section>
 
-    <div id="videoGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        <section>
+            <h2 class="text-2xl font-semibold mb-6 border-b border-gray-700 pb-2">Latest Videos</h2>
+            
+            <div id="loading-indicator" class="text-gray-400 animate-pulse">
+                Fetching videos from database...
+            </div>
+
+            <div id="video-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
+                </div>
+        </section>
+
+    </main>
 
     <script>
-        const SUPABASE_URL = "https://wuyvebiuqtjklqlbmrmes.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1eWViaXVxdGprbHFsYm1ybWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTc5NTcsImV4cCI6MjA5ODM3Mzk1N30.37Z-swkBlmEVfmaJsO3BsCXk2LdHtj1yXWN1oJrYIRw";
+        // ==========================================
+        // 1. SUPABASE INITIALIZATION
+        // ==========================================
+        const SUPABASE_URL = 'https://wuyvebiuqtjklqlbmrmes.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1eWViaXVxdGprbHFsYm1ybWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTc5NTcsImV4cCI6MjA5ODM3Mzk1N30.37Z-swkBlmEVfmaJsO3BsCXk2LdHtj1yXWN1oJrYIRw';
+        
+        // FIX: Name the instance `supabaseClient` to avoid colliding with the global `supabase` object from the CDN.
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        let isAdmin = false;
+        // ==========================================
+        // 2. DOM ELEMENTS
+        // ==========================================
+        const adminBtn = document.getElementById('admin-btn');
+        const adminPanel = document.getElementById('admin-panel');
+        const uploadForm = document.getElementById('upload-form');
+        const videoTitleInput = document.getElementById('video-title');
+        const videoFileInput = document.getElementById('video-file');
+        const uploadStatus = document.getElementById('upload-status');
+        const submitBtn = document.getElementById('upload-submit-btn');
+        const videoGrid = document.getElementById('video-grid');
+        const loadingIndicator = document.getElementById('loading-indicator');
 
-        function handleAdminClick() {
-            const pass = prompt("პაროლი:");
-            if (pass === "777") {
-                isAdmin = !isAdmin;
-                document.getElementById("adminPanel").classList.toggle("hidden");
-            } else {
-                alert("არასწორი პაროლი!");
-            }
-        }
-
-        async function addVideo() {
-            const file = document.getElementById("videoFile").files[0];
-            const title = document.getElementById("videoTitle").value;
-            if(!file || !title) return alert("შეავსე ველები");
-
-            const fileName = `${Date.now()}.${file.name.split('.').pop()}`;
-            const { error } = await supabase.storage.from('videos').upload(fileName, file);
-            if (error) return alert("შეცდომა: " + error.message);
+        // ==========================================
+        // 3. ADMIN PANEL LOGIC
+        // ==========================================
+        // FIX: Using event listeners avoids the "handleAdminClick is not defined" scope error.
+        adminBtn.addEventListener('click', () => {
+            const isHidden = adminPanel.classList.contains('hidden');
             
-            const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(fileName);
-            await supabase.from('videos').insert([{ title, video_url: publicUrl }]);
-            alert("ატვირთულია!");
-            location.reload();
-        }
+            if (isHidden) {
+                const password = prompt('Enter Admin Password:');
+                if (password === '777') {
+                    adminPanel.classList.remove('hidden');
+                    adminBtn.textContent = 'Hide Admin Panel';
+                    adminBtn.classList.replace('bg-gray-700', 'bg-indigo-600');
+                } else if (password !== null) {
+                    alert('Access Denied: Incorrect Password.');
+                }
+            } else {
+                adminPanel.classList.add('hidden');
+                adminBtn.textContent = 'Admin Access';
+                adminBtn.classList.replace('bg-indigo-600', 'bg-gray-700');
+            }
+        });
 
-        async function loadVideos() {
-            const { data } = await supabase.from('videos').select('*');
-            if (data) {
-                document.getElementById("videoGrid").innerHTML = data.map(v => `
-                    <div class="bg-[#1a1a1a] p-4 rounded">
-                        <video src="${v.video_url}" controls class="w-full"></video>
-                        <h3 class="mt-2">${v.title}</h3>
-                    </div>
-                `).join('');
+        // ==========================================
+        // 4. UPLOAD LOGIC
+        // ==========================================
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = videoTitleInput.value.trim();
+            const file = videoFileInput.files[0];
+            
+            if (!file) return;
+
+            // UI Update: Disable button and show status
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            uploadStatus.textContent = 'Uploading to Storage... Please wait.';
+            uploadStatus.className = 'text-sm mt-2 block text-yellow-400';
+
+            try {
+                // Generate a unique filename to prevent overwriting
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+                const filePath = `${fileName}`;
+
+                // A. Upload file to Supabase Storage ('videos' bucket)
+                const { data: storageData, error: storageError } = await supabaseClient
+                    .storage
+                    .from('videos')
+                    .upload(filePath, file);
+
+                if (storageError) throw storageError;
+
+                uploadStatus.textContent = 'File uploaded! Saving to database...';
+
+                // B. Get the public URL of the uploaded video
+                const { data: urlData } = supabaseClient
+                    .storage
+                    .from('videos')
+                    .getPublicUrl(filePath);
+                
+                const publicUrl = urlData.publicUrl;
+
+                // C. Insert video metadata into the 'videos' database table
+                // NOTE: This assumes you have a table named 'videos' with columns 'title' and 'video_url'
+                const { error: dbError } = await supabaseClient
+                    .from('videos')
+                    .insert([{ title: title, video_url: publicUrl }]);
+
+                if (dbError) throw dbError;
+
+                // Success!
+                uploadStatus.textContent = 'Video successfully uploaded and published!';
+                uploadStatus.className = 'text-sm mt-2 block text-green-400';
+                uploadForm.reset();
+                
+                // Refresh the gallery
+                fetchVideos();
+
+            } catch (error) {
+                console.error('Upload process failed:', error);
+                uploadStatus.textContent = `Error: ${error.message}`;
+                uploadStatus.className = 'text-sm mt-2 block text-red-400';
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                
+                // Clear success message after 5 seconds
+                setTimeout(() => {
+                    if(uploadStatus.classList.contains('text-green-400')) {
+                        uploadStatus.classList.add('hidden');
+                    }
+                }, 5000);
+            }
+        });
+
+        // ==========================================
+        // 5. FETCH & DISPLAY LOGIC
+        // ==========================================
+        async function fetchVideos() {
+            try {
+                // Fetch all records from the 'videos' table, ordered by most recent
+                const { data: videos, error } = await supabaseClient
+                    .from('videos')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                // Clear existing grid and hide loader
+                videoGrid.innerHTML = '';
+                loadingIndicator.classList.add('hidden');
+                videoGrid.classList.remove('hidden');
+
+                if (videos.length === 0) {
+                    videoGrid.innerHTML = '<p class="text-gray-400 col-span-full">No videos found. Be the first to upload!</p>';
+                    return;
+                }
+
+                // Render each video card
+                videos.forEach(video => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-800 rounded-lg overflow-hidden shadow-lg border border-gray-700 flex flex-col';
+                    
+                    card.innerHTML = `
+                        <div class="relative w-full pt-[56.25%] bg-black">
+                            <video 
+                                src="${video.video_url}" 
+                                controls 
+                                preload="metadata"
+                                class="absolute top-0 left-0 w-full h-full object-contain"
+                            ></video>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-semibold text-lg text-indigo-300 truncate" title="${video.title}">
+                                ${video.title}
+                            </h3>
+                        </div>
+                    `;
+                    videoGrid.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error('Error fetching videos:', error);
+                loadingIndicator.textContent = 'Failed to load videos. Please check your database configuration.';
+                loadingIndicator.classList.replace('text-gray-400', 'text-red-400');
+                loadingIndicator.classList.remove('animate-pulse');
             }
         }
-        loadVideos();
+
+        // Initialize fetching on page load
+        document.addEventListener('DOMContentLoaded', fetchVideos);
     </script>
 </body>
 </html>
