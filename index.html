@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Moon Studio - ვიდეო ჰოსტინგის პლატფორმა</title>
     
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Supabase JS Client (for reading only) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
@@ -280,7 +278,6 @@
     </style>
 </head>
 <body>
-    <!-- Header Navigation -->
     <nav class="glass-effect sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
@@ -306,17 +303,14 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="text-center mb-12">
             <h2 class="text-5xl font-bold text-white mb-4">მოგესალმებთ Moon Studio-ში</h2>
             <p class="text-xl text-gray-100">თქვენი პირადი ვიდეო ჰოსტინგის პლატფორმა</p>
         </div>
 
-        <!-- Alerts Container -->
         <div id="alertContainer"></div>
 
-        <!-- Videos Grid -->
         <div class="video-grid" id="videoGrid">
             <div class="flex justify-center items-center col-span-full py-12">
                 <div class="loading-spinner"></div>
@@ -324,7 +318,6 @@
         </div>
     </section>
 
-    <!-- Admin Panel Modal -->
     <div id="adminModal" class="modal">
         <div class="modal-content">
             <h3 class="text-2xl font-bold mb-6 text-gray-800">ადმინის პანელი</h3>
@@ -361,7 +354,6 @@
         </div>
     </div>
 
-    <!-- Video Player Modal -->
     <div id="videoPlayerModal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
             <button id="closePlayerBtn" class="float-right text-gray-500 hover:text-gray-700 text-2xl">×</button>
@@ -375,7 +367,6 @@
         </div>
     </div>
 
-    <!-- Script -->
     <script>
         // ============================================
         // CONFIGURATION
@@ -383,7 +374,7 @@
         // Update this to your backend URL
         const API_BASE_URL = window.location.hostname === 'localhost' 
             ? 'http://localhost:3000' 
-            : 'https://moonnina2607.onrender.com/'; // Replace with your Render.com backend URL
+            : 'https://moonnina2607.onrender.com'; // ✅ გასწორდა: ბოლო დახრილი ხაზი (/) წაშლილია
 
         const supabaseUrl = 'https://wuyvebiuqtjklqlbmrmes.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1eWViaXVxdGprbHFsYm1ybWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTc5NTcsImV4cCI6MjA5ODM3Mzk1N30.37Z-swkBlmEVfmaJsO3BsCXk2LdHtj1yXWN1oJrYIRw';
@@ -542,7 +533,7 @@
 
             const maxSize = 500 * 1024 * 1024;
             if (file.size > maxSize) {
-                showAlert('⚠️ ფაილი ძალიან დიდია (მაქსიმום 500MB)', 'error');
+                showAlert('⚠️ ფაილი ძალიან დიდია (მაქსიმომ 500MB)', 'error');
                 return;
             }
 
@@ -606,18 +597,19 @@
         // ============================================
         // VIDEO LOADING & DISPLAY
         // ============================================
+        // ✅ გასწორდა: ბრაუზერიდან პირდაპირი წვდომის ნაცვლად მიმართავს ჩვენს სერვერს
         async function loadVideos() {
             try {
                 elements.videoGrid.innerHTML = '<div class="flex justify-center items-center col-span-full py-12"><div class="loading-spinner"></div></div>';
 
-                const { data, error } = await supabaseClient
-                    .from('videos')
-                    .select('*')
-                    .order('uploaded_at', { ascending: false });
+                const response = await fetch(`${API_BASE_URL}/api/videos`);
+                
+                if (!response.ok) {
+                    throw new Error('სერვერიდან ვიდეოების წაკითხვა ვერ მოხერხდა');
+                }
 
-                if (error) throw error;
-
-                state.videos = data || [];
+                const result = await response.json();
+                state.videos = result.data || [];
 
                 if (state.videos.length === 0) {
                     elements.videoGrid.innerHTML = `
