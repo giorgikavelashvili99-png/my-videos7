@@ -1,1 +1,84 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moon Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-[#121212] text-white">
 
+    <nav class="p-4 flex justify-between items-center border-b border-gray-800">
+        <div class="text-xl font-bold">MOON STUDIO</div>
+        <button id="adminBtn" onclick="handleAdminClick()" class="bg-gray-700 px-4 py-2 rounded-lg">პანელი</button>
+    </nav>
+
+    <main class="p-6">
+        <section id="adminPanel" class="hidden bg-[#181818] p-6 rounded-xl border border-gray-800 mb-8">
+            <h2 class="text-lg mb-4">ვიდეოს დამატება</h2>
+            <input type="text" id="videoTitle" placeholder="სათაური" class="w-full bg-[#121212] p-2 mb-2 rounded border border-gray-700">
+            <input type="file" id="videoFile" class="w-full mb-2">
+            <button onclick="addVideo()" class="bg-blue-600 px-4 py-2 rounded">ატვირთვა</button>
+        </section>
+
+        <div id="videoGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = "https://wuyvebiuqtjklqlbmrmes.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1eWViaXVxdGprbHFsYm1ybWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTc5NTcsImV4cCI6MjA5ODM3Mzk1N30.37Z-swkBlmEVfmaJsO3BsCXk2LdHtj1yXWN1oJrYIRw";
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let isAdmin = false;
+
+        document.addEventListener("DOMContentLoaded", loadVideos);
+
+        function handleAdminClick() {
+            if (!isAdmin) {
+                const password = prompt("პაროლი:");
+                if (password === "777") {
+                    isAdmin = true;
+                    document.getElementById("adminPanel").classList.remove("hidden");
+                } else {
+                    alert("შეცდომა!");
+                }
+            } else {
+                isAdmin = false;
+                document.getElementById("adminPanel").classList.add("hidden");
+            }
+        }
+
+        async function addVideo() {
+            const file = document.getElementById("videoFile").files[0];
+            const title = document.getElementById("videoTitle").value;
+            
+            if(!file || !title) return alert("შეავსე ველები");
+
+            const fileName = `${Date.now()}.${file.name.split('.').pop()}`;
+            
+            const { error: uploadError } = await supabase.storage.from('videos').upload(fileName, file);
+            if (uploadError) return alert(uploadError.message);
+
+            const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(fileName);
+            
+            const { error: dbError } = await supabase.from('videos').insert([{ title, video_url: publicUrl }]);
+            if (dbError) alert(dbError.message);
+            else { alert("ატვირთულია!"); loadVideos(); }
+        }
+
+        async function loadVideos() {
+            const { data, error } = await supabase.from('videos').select('*');
+            if (error) console.error(error);
+            else {
+                document.getElementById("videoGrid").innerHTML = data.map(v => `
+                    <div class="bg-[#1a1a1a] p-4 rounded">
+                        <video src="${v.video_url}" controls class="w-full"></video>
+                        <h3 class="mt-2">${v.title}</h3>
+                    </div>
+                `).join('');
+            }
+        }
+    </script>
+</body>
+</html>
