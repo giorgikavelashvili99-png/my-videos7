@@ -3,229 +3,646 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moon Nina Studio</title>
+    <title>Moon Studio - Video Hosting Platform</title>
+    
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .video-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .video-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .video-thumbnail {
+            width: 100%;
+            height: 160px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        
+        .alert-info {
+            background: #dbeafe;
+            color: #0c2340;
+            border: 1px solid #93c5fd;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+        
+        .file-input-label {
+            display: block;
+            padding: 12px;
+            background: #f3f4f6;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 1rem;
+        }
+        
+        .file-input-label:hover {
+            background: #e5e7eb;
+            border-color: #667eea;
+        }
+        
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            margin-top: 0.5rem;
+            display: none;
+            z-index: 100;
+        }
+        
+        .dropdown-menu.active {
+            display: block;
+        }
+        
+        .dropdown-menu button {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.2s;
+        }
+        
+        .dropdown-menu button:hover {
+            background: #f3f4f6;
+        }
+        
+        @media (max-width: 768px) {
+            .video-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 1.5rem;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
-
-    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-lg">
-        <h1 class="text-2xl font-bold text-indigo-400 tracking-wide">Moon Nina Studio</h1>
-        <button id="admin-btn" class="text-sm bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded transition shadow">
-            Admin Access
-        </button>
+<body>
+    <!-- Header Navigation -->
+    <nav class="glass-effect sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <span class="text-3xl">🌙</span>
+                    <h1 class="text-white text-2xl font-bold">Moon Studio</h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button id="uploadBtn" class="btn-secondary hidden">+ Upload Video</button>
+                    
+                    <div class="relative">
+                        <button id="adminMenuBtn" class="btn-secondary">
+                            ⚙️ Admin
+                        </button>
+                        <div id="adminDropdown" class="dropdown-menu">
+                            <button id="adminToggleBtn">🔐 Login</button>
+                            <button id="logoutBtn" class="hidden">🚪 Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </nav>
 
-    <main class="container mx-auto px-4 py-8">
-        
-        <section id="admin-panel" class="hidden mb-12 bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700">
-            <h2 class="text-xl font-semibold mb-4 text-indigo-300">Admin Dashboard - Upload Video</h2>
-            <form id="upload-form" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1" for="video-title">Video Title</label>
-                    <input type="text" id="video-title" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500" placeholder="Enter video title...">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1" for="video-file">Video File (MP4, WebM)</label>
-                    <input type="file" id="video-file" accept="video/*" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500">
-                </div>
-                <button type="submit" id="upload-submit-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-6 rounded transition w-full md:w-auto">
-                    Upload Video
-                </button>
-                <p id="upload-status" class="text-sm mt-2 hidden"></p>
-            </form>
-        </section>
+    <!-- Hero Section -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="text-center mb-12">
+            <h2 class="text-5xl font-bold text-white mb-4">Welcome to Moon Studio</h2>
+            <p class="text-xl text-gray-100">Your personal video hosting platform</p>
+        </div>
 
-        <section>
-            <h2 class="text-2xl font-semibold mb-6 border-b border-gray-700 pb-2">Latest Videos</h2>
-            
-            <div id="loading-indicator" class="text-gray-400 animate-pulse">
-                Fetching videos from database...
+        <!-- Alerts Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Videos Grid -->
+        <div class="video-grid" id="videoGrid">
+            <div class="flex justify-center items-center col-span-full py-12">
+                <div class="loading-spinner"></div>
             </div>
+        </div>
+    </section>
 
-            <div id="video-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
+    <!-- Admin Panel Modal -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-6 text-gray-800">Admin Panel</h3>
+            <div id="adminLoginForm">
+                <label class="block text-gray-700 font-semibold mb-2">Enter Admin Password</label>
+                <input type="password" id="adminPassword" placeholder="Enter password" />
+                <button id="adminSubmitBtn" class="btn-primary w-full mb-3">Login</button>
+                <button id="adminCloseBtn" class="btn-secondary w-full">Close</button>
+            </div>
+            
+            <div id="adminPanel" class="hidden">
+                <h4 class="text-xl font-semibold mb-4 text-gray-800">Upload New Video</h4>
+                
+                <div class="file-input-wrapper">
+                    <input type="file" id="videoFile" accept="video/*" />
+                    <label for="videoFile" class="file-input-label">
+                        📁 Click to select video file
+                    </label>
                 </div>
-        </section>
+                
+                <input type="text" id="videoTitle" placeholder="Video Title" />
+                <textarea id="videoDescription" placeholder="Video Description" rows="3"></textarea>
+                
+                <button id="uploadVideoBtn" class="btn-primary w-full mb-3">Upload Video</button>
+                <button id="adminCloseBtn2" class="btn-secondary w-full">Close</button>
+            </div>
+        </div>
+    </div>
 
-    </main>
+    <!-- Video Player Modal -->
+    <div id="videoPlayerModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <button id="closePlayerBtn" class="float-right text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            <div style="clear: both;"></div>
+            <video id="videoPlayer" controls style="width: 100%; border-radius: 8px; margin-bottom: 1rem;">
+                <source src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <h3 id="playerTitle" class="text-2xl font-bold mb-2 text-gray-800"></h3>
+            <p id="playerDescription" class="text-gray-600"></p>
+        </div>
+    </div>
 
+    <!-- Script -->
     <script>
-        // ==========================================
-        // 1. SUPABASE INITIALIZATION
-        // ==========================================
-        const SUPABASE_URL = 'https://wuyvebiuqtjklqlbmrmes.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1eWViaXVxdGprbHFsYm1ybWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTc5NTcsImV4cCI6MjA5ODM3Mzk1N30.37Z-swkBlmEVfmaJsO3BsCXk2LdHtj1yXWN1oJrYIRw';
+        // ============================================
+        // SUPABASE INITIALIZATION (Only Once!)
+        // ============================================
+        const supabaseUrl = 'https://wuyvebiuqtjklqlbmrmes.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1eWViaXVxdGprbHFsYm1ybWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTc5NTcsImV4cCI6MjA5ODM3Mzk1N30.37Z-swkBlmEVfmaJsO3BsCXk2LdHtj1yXWN1oJrYIRw';
         
-        // FIX: Name the instance `supabaseClient` to avoid colliding with the global `supabase` object from the CDN.
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // ==========================================
-        // 2. DOM ELEMENTS
-        // ==========================================
-        const adminBtn = document.getElementById('admin-btn');
-        const adminPanel = document.getElementById('admin-panel');
-        const uploadForm = document.getElementById('upload-form');
-        const videoTitleInput = document.getElementById('video-title');
-        const videoFileInput = document.getElementById('video-file');
-        const uploadStatus = document.getElementById('upload-status');
-        const submitBtn = document.getElementById('upload-submit-btn');
-        const videoGrid = document.getElementById('video-grid');
-        const loadingIndicator = document.getElementById('loading-indicator');
+        // ============================================
+        // STATE MANAGEMENT
+        // ============================================
+        const state = {
+            isAdminLoggedIn: false,
+            videos: [],
+            currentVideo: null
+        };
 
-        // ==========================================
-        // 3. ADMIN PANEL LOGIC
-        // ==========================================
-        // FIX: Using event listeners avoids the "handleAdminClick is not defined" scope error.
-        adminBtn.addEventListener('click', () => {
-            const isHidden = adminPanel.classList.contains('hidden');
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+        const elements = {
+            alertContainer: document.getElementById('alertContainer'),
+            videoGrid: document.getElementById('videoGrid'),
+            adminMenuBtn: document.getElementById('adminMenuBtn'),
+            adminDropdown: document.getElementById('adminDropdown'),
+            adminToggleBtn: document.getElementById('adminToggleBtn'),
+            logoutBtn: document.getElementById('logoutBtn'),
+            uploadBtn: document.getElementById('uploadBtn'),
+            adminModal: document.getElementById('adminModal'),
+            adminLoginForm: document.getElementById('adminLoginForm'),
+            adminPanel: document.getElementById('adminPanel'),
+            adminPassword: document.getElementById('adminPassword'),
+            adminSubmitBtn: document.getElementById('adminSubmitBtn'),
+            videoFile: document.getElementById('videoFile'),
+            videoTitle: document.getElementById('videoTitle'),
+            videoDescription: document.getElementById('videoDescription'),
+            uploadVideoBtn: document.getElementById('uploadVideoBtn'),
+            videoPlayerModal: document.getElementById('videoPlayerModal'),
+            videoPlayer: document.getElementById('videoPlayer'),
+            playerTitle: document.getElementById('playerTitle'),
+            playerDescription: document.getElementById('playerDescription')
+        };
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
             
-            if (isHidden) {
-                const password = prompt('Enter Admin Password:');
-                if (password === '777') {
-                    adminPanel.classList.remove('hidden');
-                    adminBtn.textContent = 'Hide Admin Panel';
-                    adminBtn.classList.replace('bg-gray-700', 'bg-indigo-600');
-                } else if (password !== null) {
-                    alert('Access Denied: Incorrect Password.');
-                }
-            } else {
-                adminPanel.classList.add('hidden');
-                adminBtn.textContent = 'Admin Access';
-                adminBtn.classList.replace('bg-indigo-600', 'bg-gray-700');
-            }
-        });
-
-        // ==========================================
-        // 4. UPLOAD LOGIC
-        // ==========================================
-        uploadForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+            elements.alertContainer.appendChild(alertDiv);
             
-            const title = videoTitleInput.value.trim();
-            const file = videoFileInput.files[0];
-            
-            if (!file) return;
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 4000);
+        }
 
-            // UI Update: Disable button and show status
-            submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            uploadStatus.textContent = 'Uploading to Storage... Please wait.';
-            uploadStatus.className = 'text-sm mt-2 block text-yellow-400';
+        function closeAllModals() {
+            elements.adminModal.classList.remove('active');
+            elements.videoPlayerModal.classList.remove('active');
+            elements.adminDropdown.classList.remove('active');
+        }
 
-            try {
-                // Generate a unique filename to prevent overwriting
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-                const filePath = `${fileName}`;
+        function toggleAdminPanel() {
+            elements.adminLoginForm.classList.toggle('hidden');
+            elements.adminPanel.classList.toggle('hidden');
+        }
 
-                // A. Upload file to Supabase Storage ('videos' bucket)
-                const { data: storageData, error: storageError } = await supabaseClient
-                    .storage
-                    .from('videos')
-                    .upload(filePath, file);
-
-                if (storageError) throw storageError;
-
-                uploadStatus.textContent = 'File uploaded! Saving to database...';
-
-                // B. Get the public URL of the uploaded video
-                const { data: urlData } = supabaseClient
-                    .storage
-                    .from('videos')
-                    .getPublicUrl(filePath);
-                
-                const publicUrl = urlData.publicUrl;
-
-                // C. Insert video metadata into the 'videos' database table
-                // NOTE: This assumes you have a table named 'videos' with columns 'title' and 'video_url'
-                const { error: dbError } = await supabaseClient
-                    .from('videos')
-                    .insert([{ title: title, video_url: publicUrl }]);
-
-                if (dbError) throw dbError;
-
-                // Success!
-                uploadStatus.textContent = 'Video successfully uploaded and published!';
-                uploadStatus.className = 'text-sm mt-2 block text-green-400';
-                uploadForm.reset();
-                
-                // Refresh the gallery
-                fetchVideos();
-
-            } catch (error) {
-                console.error('Upload process failed:', error);
-                uploadStatus.textContent = `Error: ${error.message}`;
-                uploadStatus.className = 'text-sm mt-2 block text-red-400';
-            } finally {
-                // Reset button state
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                
-                // Clear success message after 5 seconds
-                setTimeout(() => {
-                    if(uploadStatus.classList.contains('text-green-400')) {
-                        uploadStatus.classList.add('hidden');
-                    }
-                }, 5000);
-            }
-        });
-
-        // ==========================================
-        // 5. FETCH & DISPLAY LOGIC
-        // ==========================================
-        async function fetchVideos() {
-            try {
-                // Fetch all records from the 'videos' table, ordered by most recent
-                const { data: videos, error } = await supabaseClient
-                    .from('videos')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                // Clear existing grid and hide loader
-                videoGrid.innerHTML = '';
-                loadingIndicator.classList.add('hidden');
-                videoGrid.classList.remove('hidden');
-
-                if (videos.length === 0) {
-                    videoGrid.innerHTML = '<p class="text-gray-400 col-span-full">No videos found. Be the first to upload!</p>';
-                    return;
-                }
-
-                // Render each video card
-                videos.forEach(video => {
-                    const card = document.createElement('div');
-                    card.className = 'bg-gray-800 rounded-lg overflow-hidden shadow-lg border border-gray-700 flex flex-col';
-                    
-                    card.innerHTML = `
-                        <div class="relative w-full pt-[56.25%] bg-black">
-                            <video 
-                                src="${video.video_url}" 
-                                controls 
-                                preload="metadata"
-                                class="absolute top-0 left-0 w-full h-full object-contain"
-                            ></video>
-                        </div>
-                        <div class="p-4">
-                            <h3 class="font-semibold text-lg text-indigo-300 truncate" title="${video.title}">
-                                ${video.title}
-                            </h3>
-                        </div>
-                    `;
-                    videoGrid.appendChild(card);
-                });
-
-            } catch (error) {
-                console.error('Error fetching videos:', error);
-                loadingIndicator.textContent = 'Failed to load videos. Please check your database configuration.';
-                loadingIndicator.classList.replace('text-gray-400', 'text-red-400');
-                loadingIndicator.classList.remove('animate-pulse');
+        // ============================================
+        // ADMIN AUTHENTICATION
+        // ============================================
+        function handleAdminClick() {
+            if (!state.isAdminLoggedIn) {
+                elements.adminModal.classList.add('active');
+                elements.adminPassword.focus();
             }
         }
 
-        // Initialize fetching on page load
-        document.addEventListener('DOMContentLoaded', fetchVideos);
+        elements.adminToggleBtn.addEventListener('click', handleAdminClick);
+        
+        elements.adminSubmitBtn.addEventListener('click', () => {
+            const password = elements.adminPassword.value;
+            
+            if (password === '777') {
+                state.isAdminLoggedIn = true;
+                showAlert('✅ Admin access granted!', 'success');
+                toggleAdminPanel();
+                
+                // Update UI
+                elements.adminToggleBtn.classList.add('hidden');
+                elements.logoutBtn.classList.remove('hidden');
+                elements.uploadBtn.classList.remove('hidden');
+                
+                // Reset form
+                elements.adminPassword.value = '';
+            } else {
+                showAlert('❌ Invalid password. Access denied.', 'error');
+                elements.adminPassword.value = '';
+            }
+        });
+
+        elements.logoutBtn.addEventListener('click', () => {
+            state.isAdminLoggedIn = false;
+            showAlert('Logged out successfully', 'info');
+            toggleAdminPanel();
+            
+            // Reset UI
+            elements.adminToggleBtn.classList.remove('hidden');
+            elements.logoutBtn.classList.add('hidden');
+            elements.uploadBtn.classList.add('hidden');
+            elements.adminModal.classList.remove('active');
+        });
+
+        // Close modals
+        document.getElementById('adminCloseBtn').addEventListener('click', closeAllModals);
+        document.getElementById('adminCloseBtn2').addEventListener('click', closeAllModals);
+        document.getElementById('closePlayerBtn').addEventListener('click', closeAllModals);
+        
+        elements.adminMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            elements.adminDropdown.classList.toggle('active');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!elements.adminMenuBtn.contains(e.target) && !elements.adminDropdown.contains(e.target)) {
+                elements.adminDropdown.classList.remove('active');
+            }
+        });
+
+        // ============================================
+        // VIDEO UPLOAD FUNCTIONALITY
+        // ============================================
+        elements.uploadBtn.addEventListener('click', () => {
+            elements.adminModal.classList.add('active');
+        });
+
+        elements.videoFile.addEventListener('change', (e) => {
+            const fileName = e.target.files[0]?.name || 'No file selected';
+            const label = document.querySelector('.file-input-label');
+            if (fileName !== 'No file selected') {
+                label.textContent = `✅ ${fileName}`;
+            }
+        });
+
+        elements.uploadVideoBtn.addEventListener('click', async () => {
+            const file = elements.videoFile.files[0];
+            const title = elements.videoTitle.value.trim();
+            const description = elements.videoDescription.value.trim();
+
+            if (!file) {
+                showAlert('⚠️ Please select a video file', 'error');
+                return;
+            }
+
+            if (!title) {
+                showAlert('⚠️ Please enter a video title', 'error');
+                return;
+            }
+
+            // Show uploading state
+            elements.uploadVideoBtn.disabled = true;
+            elements.uploadVideoBtn.textContent = 'Uploading...';
+            showAlert('📤 Uploading video...', 'info');
+
+            try {
+                // Generate unique filename
+                const timestamp = Date.now();
+                const randomStr = Math.random().toString(36).substring(7);
+                const fileName = `${timestamp}_${randomStr}_${file.name}`;
+
+                // Upload to Supabase Storage
+                const { data, error: uploadError } = await supabaseClient.storage
+                    .from('videos')
+                    .upload(`public/${fileName}`, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    throw new Error(`Storage Error: ${uploadError.message}`);
+                }
+
+                // Get public URL
+                const { data: publicUrlData } = supabaseClient.storage
+                    .from('videos')
+                    .getPublicUrl(`public/${fileName}`);
+
+                // Save metadata to database
+                const { data: dbData, error: dbError } = await supabaseClient
+                    .from('videos')
+                    .insert([
+                        {
+                            title: title,
+                            description: description,
+                            file_path: publicUrlData.publicUrl,
+                            file_name: fileName,
+                            uploaded_at: new Date().toISOString()
+                        }
+                    ]);
+
+                if (dbError) {
+                    throw new Error(`Database Error: ${dbError.message}`);
+                }
+
+                showAlert('✅ Video uploaded successfully!', 'success');
+                
+                // Reset form
+                elements.videoFile.value = '';
+                elements.videoTitle.value = '';
+                elements.videoDescription.value = '';
+                document.querySelector('.file-input-label').textContent = '📁 Click to select video file';
+
+                // Close modal and reload videos
+                closeAllModals();
+                await loadVideos();
+
+            } catch (error) {
+                console.error('Upload Error:', error);
+                showAlert(`❌ Upload failed: ${error.message}`, 'error');
+            } finally {
+                elements.uploadVideoBtn.disabled = false;
+                elements.uploadVideoBtn.textContent = 'Upload Video';
+            }
+        });
+
+        // ============================================
+        // VIDEO LOADING & DISPLAY
+        // ============================================
+        async function loadVideos() {
+            try {
+                elements.videoGrid.innerHTML = '<div class="flex justify-center items-center col-span-full py-12"><div class="loading-spinner"></div></div>';
+
+                const { data, error } = await supabaseClient
+                    .from('videos')
+                    .select('*')
+                    .order('uploaded_at', { ascending: false });
+
+                if (error) throw error;
+
+                state.videos = data || [];
+
+                if (state.videos.length === 0) {
+                    elements.videoGrid.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <p class="text-white text-xl">No videos yet. ${state.isAdminLoggedIn ? 'Upload your first video!' : ''}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                elements.videoGrid.innerHTML = '';
+
+                state.videos.forEach((video) => {
+                    const videoCard = document.createElement('div');
+                    videoCard.className = 'video-card cursor-pointer';
+                    videoCard.innerHTML = `
+                        <div class="video-thumbnail">▶️</div>
+                        <div class="p-4">
+                            <h3 class="font-bold text-gray-800 truncate">${video.title || 'Untitled'}</h3>
+                            <p class="text-gray-600 text-sm line-clamp-2">${video.description || 'No description'}</p>
+                            <p class="text-gray-400 text-xs mt-2">${new Date(video.uploaded_at).toLocaleDateString()}</p>
+                        </div>
+                    `;
+
+                    videoCard.addEventListener('click', () => playVideo(video));
+                    elements.videoGrid.appendChild(videoCard);
+                });
+
+            } catch (error) {
+                console.error('Load Videos Error:', error);
+                elements.videoGrid.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <p class="text-white text-lg">❌ Error loading videos: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function playVideo(video) {
+            elements.playerTitle.textContent = video.title || 'Untitled';
+            elements.playerDescription.textContent = video.description || 'No description provided';
+            elements.videoPlayer.src = video.file_path;
+            elements.videoPlayerModal.classList.add('active');
+            elements.videoPlayer.focus();
+        }
+
+        // ============================================
+        // INITIALIZE ON PAGE LOAD
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadVideos();
+            showAlert('🌙 Welcome to Moon Studio!', 'info');
+        });
+
+        // Reload videos every 10 seconds (optional - remove if not needed)
+        // setInterval(loadVideos, 10000);
     </script>
 </body>
 </html>
