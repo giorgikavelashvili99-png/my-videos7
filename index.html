@@ -371,7 +371,6 @@
         // ============================================
         // CONFIGURATION
         // ============================================
-        // ხაზგასმით მიეთითა თქვენი ნამდვილი Render სერვერის მისამართი
         const API_BASE_URL = 'https://moonnina2607.onrender.com';
 
         const supabaseUrl = 'https://wuyvebiuqtjklqlbmrmes.supabase.co';
@@ -599,6 +598,7 @@
             try {
                 elements.videoGrid.innerHTML = '<div class="flex justify-center items-center col-span-full py-12"><div class="loading-spinner"></div></div>';
 
+                // ვიდეოების წამოღება API_BASE_URL-ის დახმარებით, ბექენდიდან
                 const response = await fetch(`${API_BASE_URL}/api/videos`);
                 
                 if (!response.ok) {
