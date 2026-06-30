@@ -2,28 +2,24 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>Moon Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-[#121212] text-white">
-
-    <nav class="p-4 border-b border-gray-800 flex justify-between">
-        <div class="font-bold">MOON STUDIO</div>
+<body class="bg-[#121212] text-white p-6">
+    <nav class="flex justify-between pb-4 border-b border-gray-800 mb-6">
+        <h1 class="font-bold">MOON STUDIO</h1>
         <button id="adminBtn" onclick="handleAdminClick()" class="bg-gray-700 px-4 py-2 rounded">პანელი</button>
     </nav>
 
-    <main class="p-6">
-        <section id="adminPanel" class="hidden bg-[#181818] p-6 rounded border border-gray-800 mb-8">
-            <input type="text" id="videoTitle" placeholder="სათაური" class="w-full bg-[#121212] p-2 mb-2 rounded border border-gray-700 text-white">
-            <input type="file" id="videoFile" class="w-full mb-2">
-            <button onclick="addVideo()" class="bg-blue-600 px-4 py-2 rounded w-full">ატვირთვა</button>
-        </section>
-        <div id="videoGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
-    </main>
+    <section id="adminPanel" class="hidden bg-[#181818] p-6 rounded border border-gray-800 mb-8">
+        <input type="text" id="videoTitle" placeholder="სათაური" class="w-full bg-[#121212] p-2 mb-2 rounded border border-gray-700">
+        <input type="file" id="videoFile" class="w-full mb-2">
+        <button onclick="addVideo()" class="bg-blue-600 px-4 py-2 rounded w-full">ატვირთვა</button>
+    </section>
+
+    <div id="videoGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
 
     <script>
-        // სუფთა ინიციალიზაცია (მხოლოდ ერთხელ)
         const SUPABASE_URL = "https://wuyvebiuqtjklqlbmrmes.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1eWViaXVxdGprbHFsYm1ybWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTc5NTcsImV4cCI6MjA5ODM3Mzk1N30.37Z-swkBlmEVfmaJsO3BsCXk2LdHtj1yXWN1oJrYIRw";
 
@@ -47,17 +43,14 @@
 
             const fileName = `${Date.now()}.${file.name.split('.').pop()}`;
             const { error } = await supabase.storage.from('videos').upload(fileName, file);
-            
-            if (error) return alert("ატვირთვა ვერ მოხერხდა: " + error.message);
+            if (error) return alert("შეცდომა: " + error.message);
             
             const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(fileName);
             await supabase.from('videos').insert([{ title, video_url: publicUrl }]);
-            
-            alert("წარმატებით აიტვირთა!");
+            alert("ატვირთულია!");
             location.reload();
         }
 
-        // საიტის ჩატვირთვისას
         async function loadVideos() {
             const { data } = await supabase.from('videos').select('*');
             if (data) {
