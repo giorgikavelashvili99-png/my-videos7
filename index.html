@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ka">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moon Studio - Video Hosting Platform</title>
+    <title>Moon Studio - ვიდეო ჰოსტინგის პლატფორმა</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,7 +19,7 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Noto Sans Georgian', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
@@ -90,6 +90,11 @@
             box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
         }
         
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
         .btn-secondary {
             background: rgba(255, 255, 255, 0.2);
             color: white;
@@ -130,6 +135,8 @@
             width: 90%;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             animation: slideIn 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         
         @keyframes slideIn {
@@ -151,6 +158,7 @@
             font-size: 1rem;
             margin-bottom: 1rem;
             transition: border-color 0.3s;
+            font-family: inherit;
         }
         
         input:focus, textarea:focus {
@@ -243,6 +251,22 @@
             background: #f3f4f6;
         }
         
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
         @media (max-width: 768px) {
             .video-grid {
                 grid-template-columns: 1fr;
@@ -266,15 +290,15 @@
                 </div>
                 
                 <div class="flex items-center space-x-4">
-                    <button id="uploadBtn" class="btn-secondary hidden">+ Upload Video</button>
+                    <button id="uploadBtn" class="btn-secondary hidden">+ ვიდეოს ატვირთვა</button>
                     
                     <div class="relative">
                         <button id="adminMenuBtn" class="btn-secondary">
-                            ⚙️ Admin
+                            ⚙️ ადმინი
                         </button>
                         <div id="adminDropdown" class="dropdown-menu">
-                            <button id="adminToggleBtn">🔐 Login</button>
-                            <button id="logoutBtn" class="hidden">🚪 Logout</button>
+                            <button id="adminToggleBtn">🔐 შესვლა</button>
+                            <button id="logoutBtn" class="hidden">🚪 გამოსვლა</button>
                         </div>
                     </div>
                 </div>
@@ -285,8 +309,8 @@
     <!-- Hero Section -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="text-center mb-12">
-            <h2 class="text-5xl font-bold text-white mb-4">Welcome to Moon Studio</h2>
-            <p class="text-xl text-gray-100">Your personal video hosting platform</p>
+            <h2 class="text-5xl font-bold text-white mb-4">მოგესალმებთ Moon Studio-ში</h2>
+            <p class="text-xl text-gray-100">თქვენი პირადი ვიდეო ჰოსტინგის პლატფორმა</p>
         </div>
 
         <!-- Alerts Container -->
@@ -303,29 +327,36 @@
     <!-- Admin Panel Modal -->
     <div id="adminModal" class="modal">
         <div class="modal-content">
-            <h3 class="text-2xl font-bold mb-6 text-gray-800">Admin Panel</h3>
+            <h3 class="text-2xl font-bold mb-6 text-gray-800">ადმინის პანელი</h3>
             <div id="adminLoginForm">
-                <label class="block text-gray-700 font-semibold mb-2">Enter Admin Password</label>
-                <input type="password" id="adminPassword" placeholder="Enter password" />
-                <button id="adminSubmitBtn" class="btn-primary w-full mb-3">Login</button>
-                <button id="adminCloseBtn" class="btn-secondary w-full">Close</button>
+                <label class="block text-gray-700 font-semibold mb-2">ადმინის პაროლი</label>
+                <input type="password" id="adminPassword" placeholder="პარალი შეიყვანეთ" />
+                <button id="adminSubmitBtn" class="btn-primary w-full mb-3">შესვლა</button>
+                <button id="adminCloseBtn" class="btn-secondary w-full">დახურვა</button>
             </div>
             
             <div id="adminPanel" class="hidden">
-                <h4 class="text-xl font-semibold mb-4 text-gray-800">Upload New Video</h4>
+                <h4 class="text-xl font-semibold mb-4 text-gray-800">ვიდეოს ატვირთვა</h4>
                 
                 <div class="file-input-wrapper">
                     <input type="file" id="videoFile" accept="video/*" />
                     <label for="videoFile" class="file-input-label">
-                        📁 Click to select video file
+                        📁 ფაილის არჩევა
                     </label>
                 </div>
                 
-                <input type="text" id="videoTitle" placeholder="Video Title" />
-                <textarea id="videoDescription" placeholder="Video Description" rows="3"></textarea>
+                <input type="text" id="videoTitle" placeholder="ვიდეოს სახელი" />
+                <textarea id="videoDescription" placeholder="ვიდეოს აღწერა" rows="3"></textarea>
                 
-                <button id="uploadVideoBtn" class="btn-primary w-full mb-3">Upload Video</button>
-                <button id="adminCloseBtn2" class="btn-secondary w-full">Close</button>
+                <div id="progressContainer" class="hidden">
+                    <p class="text-sm text-gray-600 mb-2">ატვირთვის პროგრესი:</p>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                </div>
+                
+                <button id="uploadVideoBtn" class="btn-primary w-full mb-3">ვიდეოს ატვირთვა</button>
+                <button id="adminCloseBtn2" class="btn-secondary w-full">დახურვა</button>
             </div>
         </div>
     </div>
@@ -337,7 +368,7 @@
             <div style="clear: both;"></div>
             <video id="videoPlayer" controls style="width: 100%; border-radius: 8px; margin-bottom: 1rem;">
                 <source src="" type="video/mp4">
-                Your browser does not support the video tag.
+                თქვენი ბრაუზერი არ მხარს უჭერს ვიდეო ფაილების დაკვრას.
             </video>
             <h3 id="playerTitle" class="text-2xl font-bold mb-2 text-gray-800"></h3>
             <p id="playerDescription" class="text-gray-600"></p>
@@ -347,7 +378,7 @@
     <!-- Script -->
     <script>
         // ============================================
-        // SUPABASE INITIALIZATION (Only Once!)
+        // SUPABASE INITIALIZATION
         // ============================================
         const supabaseUrl = 'https://wuyvebiuqtjklqlbmrmes.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1eWViaXVxdGprbHFsYm1ybWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTc5NTcsImV4cCI6MjA5ODM3Mzk1N30.37Z-swkBlmEVfmaJsO3BsCXk2LdHtj1yXWN1oJrYIRw';
@@ -383,6 +414,8 @@
             videoTitle: document.getElementById('videoTitle'),
             videoDescription: document.getElementById('videoDescription'),
             uploadVideoBtn: document.getElementById('uploadVideoBtn'),
+            progressContainer: document.getElementById('progressContainer'),
+            progressFill: document.getElementById('progressFill'),
             videoPlayerModal: document.getElementById('videoPlayerModal'),
             videoPlayer: document.getElementById('videoPlayer'),
             playerTitle: document.getElementById('playerTitle'),
@@ -401,7 +434,7 @@
             
             setTimeout(() => {
                 alertDiv.remove();
-            }, 4000);
+            }, 5000);
         }
 
         function closeAllModals() {
@@ -432,35 +465,31 @@
             
             if (password === '777') {
                 state.isAdminLoggedIn = true;
-                showAlert('✅ Admin access granted!', 'success');
+                showAlert('✅ ადმინ წვდომა მინიჭებულია!', 'success');
                 toggleAdminPanel();
                 
-                // Update UI
                 elements.adminToggleBtn.classList.add('hidden');
                 elements.logoutBtn.classList.remove('hidden');
                 elements.uploadBtn.classList.remove('hidden');
                 
-                // Reset form
                 elements.adminPassword.value = '';
             } else {
-                showAlert('❌ Invalid password. Access denied.', 'error');
+                showAlert('❌ არასწორი პაროლი. წვდომა აკრძალული.', 'error');
                 elements.adminPassword.value = '';
             }
         });
 
         elements.logoutBtn.addEventListener('click', () => {
             state.isAdminLoggedIn = false;
-            showAlert('Logged out successfully', 'info');
+            showAlert('🚪 გამოსვლა წარმატებით', 'info');
             toggleAdminPanel();
             
-            // Reset UI
             elements.adminToggleBtn.classList.remove('hidden');
             elements.logoutBtn.classList.add('hidden');
             elements.uploadBtn.classList.add('hidden');
             elements.adminModal.classList.remove('active');
         });
 
-        // Close modals
         document.getElementById('adminCloseBtn').addEventListener('click', closeAllModals);
         document.getElementById('adminCloseBtn2').addEventListener('click', closeAllModals);
         document.getElementById('closePlayerBtn').addEventListener('click', closeAllModals);
@@ -484,9 +513,9 @@
         });
 
         elements.videoFile.addEventListener('change', (e) => {
-            const fileName = e.target.files[0]?.name || 'No file selected';
+            const fileName = e.target.files[0]?.name || 'ფაილი არ არის არჩეული';
             const label = document.querySelector('.file-input-label');
-            if (fileName !== 'No file selected') {
+            if (fileName !== 'ფაილი არ არის არჩეული') {
                 label.textContent = `✅ ${fileName}`;
             }
         });
@@ -497,78 +526,86 @@
             const description = elements.videoDescription.value.trim();
 
             if (!file) {
-                showAlert('⚠️ Please select a video file', 'error');
+                showAlert('⚠️ გთხოვთ აირჩიეთ ვიდეო ფაილი', 'error');
                 return;
             }
 
             if (!title) {
-                showAlert('⚠️ Please enter a video title', 'error');
+                showAlert('⚠️ გთხოვთ შეიყვანეთ ვიდეოს სახელი', 'error');
                 return;
             }
 
-            // Show uploading state
+            const maxSize = 500 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showAlert('⚠️ ფაილი ძალიან დიდია (მაქსიმום 500MB)', 'error');
+                return;
+            }
+
             elements.uploadVideoBtn.disabled = true;
-            elements.uploadVideoBtn.textContent = 'Uploading...';
-            showAlert('📤 Uploading video...', 'info');
+            elements.uploadVideoBtn.textContent = 'იტვირთება...';
+            elements.progressContainer.classList.remove('hidden');
+            showAlert('📤 ვიდეო იტვირთება...', 'info');
 
             try {
-                // Generate unique filename
                 const timestamp = Date.now();
-                const randomStr = Math.random().toString(36).substring(7);
-                const fileName = `${timestamp}_${randomStr}_${file.name}`;
+                const randomStr = Math.random().toString(36).substring(2, 8);
+                const fileName = `video_${timestamp}_${randomStr}.mp4`;
 
-                // Upload to Supabase Storage
-                const { data, error: uploadError } = await supabaseClient.storage
+                console.log('🚀 ატვირთვა დაწყო:', fileName);
+
+                // Upload with progress tracking
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
                     .from('videos')
-                    .upload(`public/${fileName}`, file, {
+                    .upload(fileName, file, {
                         cacheControl: '3600',
-                        upsert: false
+                        upsert: true,
+                        contentType: 'video/mp4'
                     });
 
                 if (uploadError) {
-                    throw new Error(`Storage Error: ${uploadError.message}`);
+                    throw new Error(`სტორეჯ ხარვეზი: ${uploadError.message}`);
                 }
 
-                // Get public URL
-                const { data: publicUrlData } = supabaseClient.storage
-                    .from('videos')
-                    .getPublicUrl(`public/${fileName}`);
+                elements.progressFill.style.width = '50%';
 
-                // Save metadata to database
+                const publicUrl = `${supabaseUrl}/storage/v1/object/public/videos/${fileName}`;
+
+                // Insert into database
                 const { data: dbData, error: dbError } = await supabaseClient
                     .from('videos')
-                    .insert([
-                        {
-                            title: title,
-                            description: description,
-                            file_path: publicUrlData.publicUrl,
-                            file_name: fileName,
-                            uploaded_at: new Date().toISOString()
-                        }
-                    ]);
+                    .insert([{
+                        title: title,
+                        description: description,
+                        file_path: publicUrl,
+                        file_name: fileName,
+                        uploaded_at: new Date().toISOString()
+                    }])
+                    .select();
 
-                if (dbError) {
-                    throw new Error(`Database Error: ${dbError.message}`);
-                }
+                if (dbError) throw new Error(`ბაზის ხარვეზი: ${dbError.message}`);
 
-                showAlert('✅ Video uploaded successfully!', 'success');
+                elements.progressFill.style.width = '100%';
+
+                showAlert('✅ ვიდეო დაემატა წარმატებით!', 'success');
                 
-                // Reset form
                 elements.videoFile.value = '';
                 elements.videoTitle.value = '';
                 elements.videoDescription.value = '';
-                document.querySelector('.file-input-label').textContent = '📁 Click to select video file';
+                document.querySelector('.file-input-label').textContent = '📁 ფაილის არჩევა';
+                elements.progressContainer.classList.add('hidden');
+                elements.progressFill.style.width = '0%';
 
-                // Close modal and reload videos
                 closeAllModals();
                 await loadVideos();
 
             } catch (error) {
-                console.error('Upload Error:', error);
-                showAlert(`❌ Upload failed: ${error.message}`, 'error');
+                console.error('ხარვეზი:', error);
+                showAlert(`❌ დაცდომა: ${error.message}`, 'error');
+                elements.progressContainer.classList.add('hidden');
+                elements.progressFill.style.width = '0%';
             } finally {
                 elements.uploadVideoBtn.disabled = false;
-                elements.uploadVideoBtn.textContent = 'Upload Video';
+                elements.uploadVideoBtn.textContent = 'ვიდეოს ატვირთვა';
             }
         });
 
@@ -591,7 +628,7 @@
                 if (state.videos.length === 0) {
                     elements.videoGrid.innerHTML = `
                         <div class="col-span-full text-center py-12">
-                            <p class="text-white text-xl">No videos yet. ${state.isAdminLoggedIn ? 'Upload your first video!' : ''}</p>
+                            <p class="text-white text-xl">ვიდეოები არ არის. ${state.isAdminLoggedIn ? 'ატვირთეთ თქვენი პირველი ვიდეო!' : ''}</p>
                         </div>
                     `;
                     return;
@@ -605,9 +642,9 @@
                     videoCard.innerHTML = `
                         <div class="video-thumbnail">▶️</div>
                         <div class="p-4">
-                            <h3 class="font-bold text-gray-800 truncate">${video.title || 'Untitled'}</h3>
-                            <p class="text-gray-600 text-sm line-clamp-2">${video.description || 'No description'}</p>
-                            <p class="text-gray-400 text-xs mt-2">${new Date(video.uploaded_at).toLocaleDateString()}</p>
+                            <h3 class="font-bold text-gray-800 truncate">${video.title || 'სახელი არ არის'}</h3>
+                            <p class="text-gray-600 text-sm line-clamp-2">${video.description || 'აღწერა არ არის'}</p>
+                            <p class="text-gray-400 text-xs mt-2">${new Date(video.uploaded_at).toLocaleDateString('ka-GE')}</p>
                         </div>
                     `;
 
@@ -616,18 +653,18 @@
                 });
 
             } catch (error) {
-                console.error('Load Videos Error:', error);
+                console.error('ვიდეოების ჩატვირთვის ხარვეზი:', error);
                 elements.videoGrid.innerHTML = `
                     <div class="col-span-full text-center py-12">
-                        <p class="text-white text-lg">❌ Error loading videos: ${error.message}</p>
+                        <p class="text-white text-lg">❌ ხარვეზი: ${error.message}</p>
                     </div>
                 `;
             }
         }
 
         function playVideo(video) {
-            elements.playerTitle.textContent = video.title || 'Untitled';
-            elements.playerDescription.textContent = video.description || 'No description provided';
+            elements.playerTitle.textContent = video.title || 'სახელი არ არის';
+            elements.playerDescription.textContent = video.description || 'აღწერა არ არის';
             elements.videoPlayer.src = video.file_path;
             elements.videoPlayerModal.classList.add('active');
             elements.videoPlayer.focus();
@@ -638,11 +675,8 @@
         // ============================================
         document.addEventListener('DOMContentLoaded', () => {
             loadVideos();
-            showAlert('🌙 Welcome to Moon Studio!', 'info');
+            showAlert('🌙 მოგესალმებთ Moon Studio-ში!', 'info');
         });
-
-        // Reload videos every 10 seconds (optional - remove if not needed)
-        // setInterval(loadVideos, 10000);
     </script>
 </body>
 </html>
