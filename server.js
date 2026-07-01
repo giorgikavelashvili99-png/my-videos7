@@ -1,154 +1,96 @@
-// server.js - Moon Studio Backend
 const express = require('express');
-const cors = require('cors');
-const multer = require('multer');
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
-
+const axios = require('axios');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ============================================
-// SUPABASE SETUP
-// ============================================
-const supabaseUrl = 'https://wuyvebiuqtjklqlbmrmes.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1eWViaXVxdGprbHFsYm1ybWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTc5NTcsImV4cCI6MjA5ODM3Mzk1N30.37Z-swkBlmEVfmaJsO3BsCXk2LdHtj1yXWN1oJrYIRw';
+// ვრთავთ სტატიკურ ფაილებს public საქაღალდიდან
+app.use(express.static(path.join(__dirname, 'public')));
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// URL-ების სწორად გადაბმის დამხმარე ფუნქცია
+function resolveUrl(base, relative) {
+    return new URL(relative, base).href;
+}
 
-// ============================================
-// MIDDLEWARE
-// ============================================
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-app.use(express.json());
+// ჩამოტვირთვის მთავარი ენდპოინტი
+app.get('/api/download', async (req, res) => {
+    const videoUrl = req.query.url;
+    const videoTitle = req.query.title || 'moon_video';
 
-// Multer setup for memory storage
-const storage = multer.memoryStorage();
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 500 * 1024 * 1024 } // 500MB
-});
+    if (!videoUrl) {
+        return res.status(400).send('ვიდეოს ბმული სავალდებულოა (?url=...)');
+    }
 
-// ============================================
-// ROUTES
-// ============================================
-
-// Health check
-app.get('/health', (req, res) => {
-    res.json({ status: 'OK', message: 'Moon Studio API is running!' });
-});
-
-// Upload video
-app.post('/api/upload', upload.single('video'), async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file provided' });
-        }
+        const safeTitle = videoTitle.replace(/[\\/:*?"<>|]+/g, "_");
+        
+        // ბრაუზერს ვეუბნებით, რომ ფაილი უნდა გადმოიწეროს და არა უბრალოდ გაიხსნას
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(safeTitle)}.ts"`);
+        res.setHeader('Content-Type', 'video/mp2t');
 
-        const { title, description } = req.body;
+        // 1. ვკითხულობთ მთავარ მანიფესტს საიტიდან
+        const response = await axios.get(videoUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+        });
+        let manifestText = response.data;
+        let currentManifestUrl = videoUrl;
 
-        if (!title) {
-            return res.status(400).json({ error: 'Title is required' });
-        }
+        // 2. თუ ეს არის Master Playlist, ავტომატურად ვპოულობთ საუკეთესო ხარისხს (BANDWIDTH)
+        if (manifestText.includes('#EXT-X-STREAM-INF')) {
+            const lines = manifestText.split('\n').map(l => l.trim());
+            let bestVariantUrl = null;
+            let maxBandwidth = 0;
 
-        const timestamp = Date.now();
-        const randomStr = Math.random().toString(36).substring(2, 8);
-        const fileName = `video_${timestamp}_${randomStr}.mp4`;
-
-        console.log(`📤 Uploading: ${fileName}, Size: ${req.file.size} bytes`);
-
-        // Upload to Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('videos')
-            .upload(fileName, req.file.buffer, {
-                contentType: 'video/mp4',
-                cacheControl: '3600',
-                upsert: true
-            });
-
-        if (uploadError) {
-            console.error('❌ Storage Error:', uploadError);
-            return res.status(500).json({ error: `Storage error: ${uploadError.message}` });
-        }
-
-        console.log('✅ File uploaded to storage');
-
-        // Get public URL
-        const publicUrl = `${supabaseUrl}/storage/v1/object/public/videos/${fileName}`;
-
-        // Insert into database
-        const { data: dbData, error: dbError } = await supabase
-            .from('videos')
-            .insert([{
-                title: title.trim(),
-                description: (description || '').trim(),
-                file_path: publicUrl,
-                file_name: fileName,
-                uploaded_at: new Date().toISOString()
-            }])
-            .select();
-
-        if (dbError) {
-            // Delete uploaded file if database insert fails
-            await supabase.storage.from('videos').remove([fileName]);
-            console.error('❌ Database Error:', dbError);
-            return res.status(500).json({ error: `Database error: ${dbError.message}` });
-        }
-
-        console.log('✅ Metadata saved to database');
-
-        res.status(200).json({
-            success: true,
-            message: 'Video uploaded successfully!',
-            data: {
-                fileName: fileName,
-                url: publicUrl,
-                title: title,
-                id: dbData[0]?.id
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].startsWith('#EXT-X-STREAM-INF')) {
+                    const bwMatch = lines[i].match(/BANDWIDTH=(\d+)/);
+                    const bw = bwMatch ? parseInt(bwMatch[1], 10) : 0;
+                    const nextLine = lines[i + 1];
+                    if (nextLine && !nextLine.startsWith('#') && bw > maxBandwidth) {
+                        maxBandwidth = bw;
+                        bestVariantUrl = nextLine;
+                    }
+                }
             }
-        });
 
-    } catch (error) {
-        console.error('❌ Server Error:', error);
-        res.status(500).json({ error: `Server error: ${error.message}` });
-    }
-});
-
-// Get all videos
-app.get('/api/videos', async (req, res) => {
-    try {
-        const { data, error } = await supabase
-            .from('videos')
-            .select('*')
-            .order('uploaded_at', { ascending: false });
-
-        if (error) {
-            return res.status(500).json({ error: error.message });
+            if (bestVariantUrl) {
+                currentManifestUrl = resolveUrl(currentManifestUrl, bestVariantUrl);
+                const variantRes = await axios.get(currentManifestUrl);
+                manifestText = variantRes.data;
+            }
         }
 
-        res.status(200).json({
-            success: true,
-            data: data || []
-        });
+        // 3. ამოვიღოთ ყველა ვიდეო სეგმენტის (.ts) პირდაპირი ლინკი
+        const lines = manifestText.split('\n').map(l => l.trim());
+        const segments = [];
+        for (const line of lines) {
+            if (line && !line.startsWith('#')) {
+                segments.push(resolveUrl(currentManifestUrl, line));
+            }
+        }
 
-    } catch (error) {
-        console.error('❌ Server Error:', error);
-        res.status(500).json({ error: error.message });
+        if (segments.length === 0) {
+            return res.status(404).send('ვიდეო სეგმენტები ვერ მოიძებნა მანიფესტში.');
+        }
+
+        // 4. სათითაოდ ამოვიღოთ სეგმენტები და რეალურ დროში ჩავწეროთ პასუხში (Streaming)
+        for (let i = 0; i < segments.length; i++) {
+            try {
+                const segRes = await axios.get(segments[i], { responseType: 'arraybuffer' });
+                res.write(Buffer.from(segRes.data));
+            } catch (segErr) {
+                console.error(`შეცდომა სეგმენტზე ${i}:`, segErr.message);
+                // თუ ერთი სეგმენტი ჩავარდა, მაინც ვაგრძელებთ, რომ ფაილი არ გაფუჭდეს
+            }
+        }
+
+        res.end();
+    } catch (err) {
+        console.error("სერვერის შეცდომა:", err.message);
+        if (!res.headersSent) {
+            res.status(500).send('ვიდეოს დამუშავება ჩავარდა: ' + err.message);
+        }
     }
 });
 
-// ============================================
-// START SERVER
-// ============================================
-app.listen(PORT, () => {
-    console.log(`🚀 Moon Studio API running on port ${PORT}`);
-    console.log(`📍 Health check: http://localhost:${PORT}/health`);
-    console.log(`📤 Upload endpoint: http://localhost:${PORT}/api/upload`);
-    console.log(`📺 Videos endpoint: http://localhost:${PORT}/api/videos`);
-});
-
-module.exports = app;
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
