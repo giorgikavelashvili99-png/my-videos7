@@ -1,1 +1,102 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moon Cloud Downloader</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 90%;
+      max-width: 700px;
+      background: #181825;
+      border: 1px solid #313244;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      text-align: center;
+    }
+    h1 { font-size: 20px; color: #f5c2e7; margin-bottom: 8px; word-wrap: break-word; }
+    .subtitle { font-size: 13px; color: #a6adc8; margin-bottom: 20px; }
+    video {
+      width: 100%;
+      border-radius: 12px;
+      background: #11111b;
+      border: 1px solid #45475a;
+      margin-bottom: 20px;
+    }
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      background: #cba6f7;
+      color: #11111b;
+      border: none;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .download-btn:hover { opacity: 0.9; }
+    .footer-note { font-size: 11px; color: #6c7086; margin-top: 12px; }
+  </style>
+</head>
+<body>
 
+  <div class="container">
+    <h1 id="videoTitle">მზადდება...</h1>
+    <p class="subtitle">Moon Cloud სერვერული გვერდის ავლის პანელი</p>
+
+    <video id="videoPlayer" controls autoplay muted></video>
+
+    <a id="downloadLink" class="download-btn" href="#">
+      📥 ჩამოტვირთვა სერვერის გავლით (High Speed)
+    </a>
+    
+    <p class="footer-note">ვიდეო დამუშავდება პირდაპირ სტრიმიდან და ჩამოიტვირთება .TS ფორმატში</p>
+  </div>
+
+  <script>
+    // პარამეტრების ამოღება URL-დან (?url=...&title=...)
+    const params = new URLSearchParams(window.location.search);
+    const videoUrl = params.get('url');
+    const videoTitle = params.get('title') || 'ვიდეო ფაილი';
+
+    document.getElementById('videoTitle').textContent = videoTitle;
+
+    if (videoUrl) {
+      // 1. ვაწყობთ ჩამოტვირთვის ლინკს ჩვენსავე სერვერულ API-ზე
+      document.getElementById('downloadLink').href = `/api/download?url=${encodeURIComponent(videoUrl)}&title=${encodeURIComponent(videoTitle)}`;
+
+      // 2. ვრთავთ ვიდეოს საყურებლად პირდაპირ გვერდზე
+      const video = document.getElementById('videoPlayer');
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(videoUrl);
+        hls.attachMedia(video);
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = videoUrl;
+      }
+    } else {
+      document.getElementById('videoTitle').textContent = "შეცდომა: ბმული არ არის მოწოდებული";
+    }
+  </script>
+</body>
+</html>
